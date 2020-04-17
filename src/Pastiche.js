@@ -11,6 +11,14 @@ const ROTATION = [
   'rotate(-45deg)',
 ]
 
+const COLORS = [
+  '#150af0',
+  '#f07d0a',
+  '#009416',
+  '#b0050e',
+  '#595259',
+]
+
 export class Pastiche extends Component {
   constructor(props) {
     super(props);
@@ -25,8 +33,7 @@ export class Pastiche extends Component {
   componentDidMount() {
     const { quote } = this.state;
     const quoteList = quote.split(/\s*(?:[;,.//]|$)\s*/);
-    // const quoteList = quote.split(' ');
-    console.log(quoteList);
+    this.setState({ quoteList })
     this.loadImages(quoteList);
     this.updateWindowDimensions();
     window.addEventListener('resize', this.updateWindowDimensions);
@@ -46,7 +53,7 @@ export class Pastiche extends Component {
     return Math.floor(Math.random() * (max - min + 1)) + min; //The maximum is inclusive and the minimum is inclusive 
   }
 
-  loadImageFlickr = async (quote) => {
+  loadImageFlickr = async (quote, index) => {
     // https://www.flickr.com/services/api/flickr.photos.search.html
     // https://www.flickr.com/services/rest/?method=flickr.photos.search&api_key=6c1975a4b22f8f362e5ea3f7faa4bab7&text=Love&format=json&nojsoncallback=1
     try {
@@ -77,6 +84,7 @@ export class Pastiche extends Component {
           const { farm, server, id, secret, title } = image;
           return {
             title,
+            color: COLORS[index],
             url: `https://farm${farm}.staticflickr.com/${server}/${id}_${secret}.jpg`,
           }
         })
@@ -101,6 +109,7 @@ export class Pastiche extends Component {
         list: 'allimages',
         aifrom: quote,
         ailimit: 20,
+        safe_search : 1,
       }
       const result = await ky
         .get(
@@ -125,9 +134,9 @@ export class Pastiche extends Component {
   }
 
   loadImages = (quotes) => {
-    quotes.map((quote) => {
+    quotes.map((quote, index) => {
       // if (quote) this.loadImageWikipedia(quote);
-      if (quote) this.loadImageFlickr(quote);
+      if (quote) this.loadImageFlickr(quote, index);
       return null;
     });
   }
@@ -157,12 +166,12 @@ export class Pastiche extends Component {
   }
 
   render() {
-    const { images, quote } = this.state;
+    const { images, quoteList = [] } = this.state;
     return (
       <div className={styles.app}>
         <div className={styles.appImageContainer}>
           {images.map((image, index) => {
-            const { title, url } = image || {};
+            const { title, url, color } = image || {};
             const { leftEdge, topEdge } = this.placeImage();
             const rotation = ROTATION[this.getRandomIntInclusive(0, 5)];
             return (
@@ -175,7 +184,7 @@ export class Pastiche extends Component {
                   transform: rotation,
                 }}
               >
-                <div className={styles.shadow}>
+                <div style={{ border: `5px solid ${color}` }} className={styles.shadow}>
                   <img
                     alt={title}
                     className={styles.appImage}
@@ -186,9 +195,18 @@ export class Pastiche extends Component {
             )
           })}
         </div>
-        <p className={styles.appQuote}>
-          {quote}
-        </p>
+        <div className={styles.appQuote}>
+          <p>
+            {quoteList.map((quote, index) => {
+              const quoteDelim = (index < quoteList.length - 1) 
+                ? `${quote} / `
+                : quote;
+              return (
+              <span style={{ color: COLORS[index] }} className={styles.quote}>{quoteDelim}</span>
+              )
+            })}
+          </p>
+        </div>
       </div>
     );
   }
